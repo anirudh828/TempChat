@@ -44,7 +44,9 @@ const CreateRoom = () => {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { throw new Error('Server returned an invalid response. Please try again.'); }
 
       if (!res.ok) {
         throw new Error(data.message || 'Failed to create room');
