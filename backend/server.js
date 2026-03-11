@@ -15,23 +15,8 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-// Middleware — flexible CORS for deployment
-const allowedOrigin = process.env.FRONTEND_URL || '*';
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    // Normalize comparison — strip trailing slashes
-    const normalizedOrigin = origin.replace(/\/+$/, '');
-    const normalizedAllowed = allowedOrigin.replace(/\/+$/, '');
-    if (allowedOrigin === '*' || normalizedOrigin === normalizedAllowed) {
-      return callback(null, true);
-    }
-    callback(new Error('Not allowed by CORS'));
-  },
-  methods: ['GET', 'POST'],
-  credentials: true
-}));
+// Middleware — CORS open for all origins
+app.use(cors());
 app.use(express.json());
 
 // Routes will be mounted here
@@ -43,17 +28,8 @@ app.get('/api/health', (req, res) => {
 // Setup Socket.io
 const io = new Server(server, {
   cors: {
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      const normalizedOrigin = origin.replace(/\/+$/, '');
-      const normalizedAllowed = allowedOrigin.replace(/\/+$/, '');
-      if (allowedOrigin === '*' || normalizedOrigin === normalizedAllowed) {
-        return callback(null, true);
-      }
-      callback(new Error('Not allowed by CORS'));
-    },
-    methods: ['GET', 'POST'],
-    credentials: true
+    origin: '*',
+    methods: ['GET', 'POST']
   }
 });
 
