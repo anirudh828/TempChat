@@ -1,12 +1,23 @@
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
 
+const fs = require('fs');
+const path = require('path');
+
 let dbInstance = null;
 
 const connectDB = async () => {
   try {
+    // Ensure the data directory exists for persistent storage
+    const dataDir = path.join(__dirname, '..', 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+
+    const dbPath = path.join(dataDir, 'tempchat.db');
+
     const db = await open({
-      filename: './tempchat.db',
+      filename: dbPath,
       driver: sqlite3.Database
     });
     

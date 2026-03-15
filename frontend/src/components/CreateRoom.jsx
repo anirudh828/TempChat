@@ -44,9 +44,7 @@ const CreateRoom = () => {
         body: JSON.stringify(payload),
       });
 
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch { throw new Error('Server returned an invalid response. Please try again.'); }
+      const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.message || 'Failed to create room');
@@ -57,7 +55,8 @@ const CreateRoom = () => {
         state: { 
           username: formData.username,
           roomId: data.room.roomId,
-          isCreator: true
+          isCreator: true,
+          initialUserCount: 1
         } 
       });
 

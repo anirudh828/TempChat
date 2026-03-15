@@ -45,7 +45,8 @@ const createRoom = async (req, res) => {
       room: {
         roomId: room.roomId,
         creator: room.creator,
-        expiryTime: room.expiryTime
+        expiryTime: room.expiryTime,
+        users: room.users
       }
     });
 
@@ -99,7 +100,8 @@ const joinRoom = async (req, res) => {
         roomId: room.roomId,
         creator: room.creator,
         expiryTime: room.expiryTime,
-        messages: room.messages
+        messages: room.messages,
+        users: room.users
       }
     });
 

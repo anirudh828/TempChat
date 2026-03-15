@@ -58,10 +58,13 @@ class Room {
     }
   }
 
-  // Hard-delete a room from the database
-  static async deleteRoom(roomId) {
-    const db = getDB();
-    await db.run('DELETE FROM rooms WHERE roomId = ?', [roomId]);
+  // Remove a user from the room to allow rejoining after refresh
+  static async removeUser(roomId, username) {
+    const room = await this.findOne({ roomId });
+    if (room && room.users) {
+      room.users = room.users.filter(u => u !== username);
+      await room.save();
+    }
   }
 }
 

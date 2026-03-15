@@ -15,8 +15,11 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-// Middleware — CORS open for all origins
-app.use(cors());
+// Middleware
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  methods: ['GET', 'POST']
+}));
 app.use(express.json());
 
 // Routes will be mounted here
@@ -28,7 +31,7 @@ app.get('/api/health', (req, res) => {
 // Setup Socket.io
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: process.env.FRONTEND_URL || '*',
     methods: ['GET', 'POST']
   }
 });

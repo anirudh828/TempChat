@@ -1,18 +1,29 @@
 import { useState } from 'react';
 import CreateRoom from '../components/CreateRoom';
 import JoinRoom from '../components/JoinRoom';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState('join');
+  const { isDark, toggleTheme } = useTheme();
 
   return (
-    <div className="flex-1 flex items-center justify-center p-4 sm:p-8 relative overflow-hidden">
+    <div className="flex-1 flex items-center justify-center p-4 sm:p-8 relative overflow-hidden bg-slate-50 dark:bg-dark-bg transition-colors duration-300">
       
       {/* Decorative background elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary-500/20 dark:bg-primary-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/20 dark:bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary-500/20 dark:bg-primary-600/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/20 dark:bg-purple-600/5 rounded-full blur-3xl pointer-events-none" />
       
+      {/* Theme Toggle - Top Right */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 p-2.5 rounded-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-primary-500 dark:hover:text-primary-400 transition-all hover:scale-105 shadow-sm z-20"
+        title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+      >
+        {isDark ? <Sun size={20} /> : <Moon size={20} />}
+      </button>
+
       <div className="w-full max-w-md glass-panel rounded-2xl p-6 sm:p-8 animate-slide-up relative z-10">
         
         {/* Header */}

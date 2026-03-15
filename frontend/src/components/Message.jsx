@@ -1,7 +1,8 @@
 import { Smile, User } from 'lucide-react';
+import { useState } from 'react';
 
-// isPickerOpen and onTogglePicker are controlled by parent (ChatBox) to ensure only one picker at a time
-const Message = ({ msg, isOwn, onReact, isPickerOpen, onTogglePicker }) => {
+const Message = ({ msg, isOwn, onReact }) => {
+  const [showReactions, setShowReactions] = useState(false);
   const reactionsList = ['👍', '❤️', '😂', '🔥', '🎉'];
 
   // Format time
@@ -40,7 +41,7 @@ const Message = ({ msg, isOwn, onReact, isPickerOpen, onTogglePicker }) => {
             
             {/* Hover Reaction Button */}
             <button
-              onClick={onTogglePicker}
+              onClick={() => setShowReactions(!showReactions)}
               className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white dark:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shadow-sm border border-slate-100 dark:border-slate-600 transition-opacity ${
                 isOwn ? '-left-10' : '-right-10'
               } opacity-0 group-hover:opacity-100`}
@@ -48,9 +49,9 @@ const Message = ({ msg, isOwn, onReact, isPickerOpen, onTogglePicker }) => {
               <Smile size={16} />
             </button>
 
-            {/* Reaction Picker Popover — controlled by parent */}
-            {isPickerOpen && (
-              <div className={`absolute top-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-lg px-2 py-1.5 flex flex-row flex-nowrap gap-0.5 z-50 ${
+            {/* Reaction Picker Popover */}
+            {showReactions && (
+              <div className={`absolute top-0 -translate-y-full mb-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-lg p-1.5 flex gap-1 z-10 ${
                 isOwn ? 'right-0' : 'left-0'
               } animate-fade-in`}>
                 {reactionsList.map((r) => (
@@ -58,6 +59,7 @@ const Message = ({ msg, isOwn, onReact, isPickerOpen, onTogglePicker }) => {
                     key={r}
                     onClick={() => {
                       onReact(r);
+                      setShowReactions(false);
                     }}
                     className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors active:scale-95"
                   >
@@ -77,13 +79,13 @@ const Message = ({ msg, isOwn, onReact, isPickerOpen, onTogglePicker }) => {
             {/* Render Active Reactions */}
             {msg.reactions && Object.keys(msg.reactions).length > 0 && (
               <div className={`flex gap-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-                {Object.entries(msg.reactions).filter(([, users]) => Array.isArray(users) ? users.length > 0 : users > 0).map(([reaction, users]) => (
+                {Object.entries(msg.reactions).map(([reaction, count]) => (
                   <span 
                     key={reaction}
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700"
                   >
                     <span>{reaction}</span>
-                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">{Array.isArray(users) ? users.length : users}</span>
+                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">{count}</span>
                   </span>
                 ))}
               </div>

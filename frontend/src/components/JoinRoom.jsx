@@ -32,9 +32,7 @@ const JoinRoom = () => {
         body: JSON.stringify(formData),
       });
 
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch { throw new Error('Server returned an invalid response. Please try again.'); }
+      const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.message || 'Failed to join room');
@@ -46,7 +44,8 @@ const JoinRoom = () => {
           username: formData.username,
           roomId: data.room.roomId,
           isCreator: false,
-          initialMessages: data.room.messages
+          initialMessages: data.room.messages,
+          initialUserCount: data.room.users ? data.room.users.length : 1
         } 
       });
 

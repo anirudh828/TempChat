@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary-50: #eff6ff;
   --color-primary-100: #dbeafe;
@@ -27,12 +29,16 @@
 }
 
 @layer base {
-  body {
+  html, body {
     @apply bg-slate-50 text-slate-900 transition-colors duration-200 antialiased;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
-  
-  :is(.dark body) {
-    @apply bg-(--color-dark-bg) text-(--color-dark-text);
+
+  html.dark,
+  html.dark body {
+    background-color: var(--color-dark-bg);
+    color: var(--color-dark-text);
   }
 }
 
@@ -59,6 +65,8 @@
 }
 
 :is(.dark .glass-panel) {
-  @apply bg-(--color-dark-card)/80 backdrop-blur-md border shadow-2xl;
-  border-color: rgba(51, 65, 85, 0.5); /* slate-700/50 fallback */
+  background-color: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(12px);
+  border-color: rgba(51, 65, 85, 0.5);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
 }

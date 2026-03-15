@@ -1,18 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, SmilePlus } from 'lucide-react';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
+import { useTheme } from '../ThemeContext';
 
 const ChatBox = ({ messages, currentUser, onSendMessage, onReact, isTyping, onTyping }) => {
   const [text, setText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [activeReactionIdx, setActiveReactionIdx] = useState(null); // tracks which message's picker is open
   const messagesEndRef = useRef(null);
-  
-  const chatEmojis = [
-    '😀','😁','😂','🤣','😅','😊','😍','🥰','😘','😜',
-    '😎','🤩','🥳','😢','😭','😤','😡','🤯','🥺','🙏',
-    '👍','👎','👏','🙌','🤝','✌️','🤞','❤️','💔','🔥',
-    '✨','🎉','🎊','💯','🚀','👀','💀','🤔','🤡','👻'
-  ];
+  const emojiPickerRef = useRef(null);
+  const { isDark } = useTheme();
 
   // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {
@@ -23,6 +19,17 @@ const ChatBox = ({ messages, currentUser, onSendMessage, onReact, isTyping, onTy
     scrollToBottom();
   }, [messages, isTyping]);
 
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (text.trim()) {
@@ -30,6 +37,7 @@ const ChatBox = ({ messages, currentUser, onSendMessage, onReact, isTyping, onTy
       setText('');
       // Need to notify backend we stopped typing immediately
       onTyping(false);
+      setShowEmojiPicker(false);
     }
   };
 
@@ -46,9 +54,9 @@ const ChatBox = ({ messages, currentUser, onSendMessage, onReact, isTyping, onTy
     }
   };
 
-  const addEmoji = (emoji) => {
-    setText(prev => prev + emoji);
-    setShowEmojiPicker(false);
+  const onEmojiClick = (emojiObject) => {
+    setText(prevText => prevText + emojiObject.emoji);
+    // Position cursor after the emoji if needed, but for now just appending is fine
   };
 
   return (
@@ -74,9 +82,7 @@ const ChatBox = ({ messages, currentUser, onSendMessage, onReact, isTyping, onTy
                 <Message 
                   msg={msg} 
                   isOwn={msg.sender === currentUser} 
-                  onReact={(reaction) => { onReact(idx, reaction); setActiveReactionIdx(null); }}
-                  isPickerOpen={activeReactionIdx === idx}
-                  onTogglePicker={() => setActiveReactionIdx(prev => prev === idx ? null : idx)}
+                  onReact={(reaction) => onReact(idx, reaction)}
                 />
               )}
             </div>
@@ -99,34 +105,33 @@ const ChatBox = ({ messages, currentUser, onSendMessage, onReact, isTyping, onTy
 
       {/* Input Area */}
       <div className="p-3 sm:p-4 bg-white dark:bg-dark-card border-t border-slate-200 dark:border-slate-800 backdrop-blur-md relative">
+        {/* Emoji Picker Popover */}
+        {showEmojiPicker && (
+          <div 
+            ref={emojiPickerRef}
+            className="absolute bottom-full left-0 sm:left-4 mb-4 z-50 animate-fade-in w-full sm:w-auto flex justify-center sm:justify-start"
+          >
+            <EmojiPicker 
+              onEmojiClick={onEmojiClick}
+              theme={isDark ? Theme.DARK : Theme.LIGHT}
+              lazyLoadEmojis={true}
+              searchPlaceholder="Search emojis..."
+              width={window.innerWidth < 640 ? '90%' : 350}
+              height={400}
+            />
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           
-          <div className="relative">
-            <button 
-              type="button" 
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="p-2 text-slate-400 hover:text-primary-500 dark:hover:text-primary-400 transition-colors rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              <SmilePlus size={22} />
-            </button>
-
-            {/* Emoji Popover */}
-            {showEmojiPicker && (
-              <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg p-2 flex flex-wrap gap-1 z-50 w-64 animate-fade-in">
-                {chatEmojis.map(emoji => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => addEmoji(emoji)}
-                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-xl"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
+          <button 
+            type="button" 
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className={`p-2 transition-colors rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 ${showEmojiPicker ? 'text-primary-500' : 'text-slate-400 hover:text-primary-500 dark:hover:text-primary-400'}`}
+          >
+            <SmilePlus size={22} />
+          </button>
+          
           <input
             type="text"
             value={text}
@@ -152,3 +157,4 @@ const ChatBox = ({ messages, currentUser, onSendMessage, onReact, isTyping, onTy
 import Message from './Message';
 
 export default ChatBox;
+

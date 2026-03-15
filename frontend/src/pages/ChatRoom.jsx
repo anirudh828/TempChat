@@ -3,7 +3,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Dashboard from '../components/Dashboard';
 import ChatBox from '../components/ChatBox';
-import { LogOut } from 'lucide-react';
+import { LogOut, X, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const ChatRoom = () => {
   const { roomId } = useParams();
@@ -13,46 +14,39 @@ const ChatRoom = () => {
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [roomInfo, setRoomInfo] = useState(null);
-  const [userCount, setUserCount] = useState(1);
+  const [userCount, setUserCount] = useState(location.state?.initialUserCount || 1);
   const [activeTypers, setActiveTypers] = useState(new Set());
-  const [hostWarning, setHostWarning] = useState(null); // Warning banner text
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
 
-  // Extracted state from location
   const username = location.state?.username;
   const isCreator = location.state?.isCreator || false;
 
   useEffect(() => {
-    // If user navigates directly without joining/creating, kick them out
     if (!username || !roomId) {
       navigate('/');
       return;
     }
 
-    // Set initial messages if available (from join-room API response)
     if (location.state?.initialMessages) {
       setMessages(location.state.initialMessages);
     }
 
-    // Optional: Fetch full room info if we only have initial data
     if (location.state?.isCreator) {
       setRoomInfo({
         roomId,
         creator: username,
-        expiryTime: new Date(Date.now() + 60 * 60 * 1000) // Dummy for immediate render
+        expiryTime: new Date(Date.now() + 60 * 60 * 1000)
       });
     }
 
-    // Initialize Socket
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    // Remove /api for socket connection
     const socketUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
     
     const newSocket = io(socketUrl);
     setSocket(newSocket);
 
-    // Socket Event Listeners
     newSocket.on('connect', () => {
-      // Join the specific room via socket
       newSocket.emit('join_room', { roomId, username });
     });
 
@@ -65,21 +59,14 @@ const ChatRoom = () => {
       setMessages(prev => [...prev, message]);
     });
 
-    newSocket.on('receive_reaction', ({ messageIndex, reaction, username: reactorUser }) => {
+    newSocket.on('receive_reaction', ({ messageIndex, reaction }) => {
       setMessages(prev => {
         const newMsgs = [...prev];
         if (newMsgs[messageIndex]) {
-          const prevReactions = newMsgs[messageIndex].reactions || {};
-          const reactors = prevReactions[reaction] || [];
-          if (!reactors.includes(reactorUser)) {
-            newMsgs[messageIndex] = {
-              ...newMsgs[messageIndex],
-              reactions: {
-                ...prevReactions,
-                [reaction]: [...reactors, reactorUser]
-              }
-            };
-          }
+          const currentReactions = newMsgs[messageIndex].reactions || {};
+          const currentCount = currentReactions[reaction] || 0;
+          currentReactions[reaction] = currentCount + 1;
+          newMsgs[messageIndex].reactions = currentReactions;
         }
         return newMsgs;
       });
@@ -99,24 +86,6 @@ const ChatRoom = () => {
       setUserCount(prev => Math.max(1, prev - 1));
     });
 
-    // Host disconnected — show warning banner
-    newSocket.on('host_disconnected', (data) => {
-      setHostWarning(data.message);
-    });
-
-    // Host reconnected — clear warning banner
-    newSocket.on('host_reconnected', (data) => {
-      setHostWarning(null);
-      setMessages(prev => [...prev, { isSystem: true, text: data.message }]);
-    });
-
-    // Room deleted — kick everyone back home after a short delay
-    newSocket.on('room_deleted', (data) => {
-      setHostWarning(data.message);
-      setTimeout(() => navigate('/'), 3000); // 3s so they can read the message
-    });
-
-    // Cleanup on unmount
     return () => {
       newSocket.emit('leave_room', { roomId, username });
       newSocket.disconnect();
@@ -127,7 +96,6 @@ const ChatRoom = () => {
     if (socket) {
       const msgData = { roomId, sender: username, text };
       socket.emit('send_message', msgData);
-      // Optimistically append message
       setMessages(prev => [...prev, { 
         ...msgData, 
         timestamp: new Date().toISOString(),
@@ -138,25 +106,14 @@ const ChatRoom = () => {
 
   const handleReaction = (messageIndex, reaction) => {
     if (socket) {
-      // Check if already reacted with this emoji
-      const msg = messages[messageIndex];
-      const reactors = msg?.reactions?.[reaction] || [];
-      if (reactors.includes(username)) return; // already reacted
-
       socket.emit('send_reaction', { roomId, messageIndex, reaction });
-      // Optimistically update
       setMessages(prev => {
         const newMsgs = [...prev];
         if (newMsgs[messageIndex]) {
-          const prevReactions = newMsgs[messageIndex].reactions || {};
-          const prevReactors = prevReactions[reaction] || [];
-          newMsgs[messageIndex] = {
-            ...newMsgs[messageIndex],
-            reactions: {
-              ...prevReactions,
-              [reaction]: [...prevReactors, username]
-            }
-          };
+          const currentReactions = newMsgs[messageIndex].reactions || {};
+          const currentCount = currentReactions[reaction] || 0;
+          currentReactions[reaction] = currentCount + 1;
+          newMsgs[messageIndex].reactions = currentReactions;
         }
         return newMsgs;
       });
@@ -170,27 +127,67 @@ const ChatRoom = () => {
   };
 
   const leaveRoom = () => {
-    if (window.confirm("Are you sure you want to leave this room?")) {
-      navigate('/');
-    }
+    navigate('/');
   };
 
-  if (!username) return null; // Prevent flicker before redirect
+  if (!username) return null;
 
   return (
     <div className="h-full w-full flex flex-col sm:flex-row overflow-hidden bg-white dark:bg-dark-bg">
       
-      {/* Mobile Header / Quick Info */}
+      {/* Leave Room Confirmation Modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
+          <div className="bg-white dark:bg-dark-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-700 animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Leave Room?</h3>
+              <button 
+                onClick={() => setShowLeaveModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
+              Are you sure you want to leave this room? You can rejoin later with the room ID and password.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLeaveModal(false)}
+                className="flex-1 py-2 px-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={leaveRoom}
+                className="flex-1 py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors shadow-lg shadow-red-500/30"
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Header */}
       <div className="sm:hidden flex items-center justify-between p-3 bg-white dark:bg-dark-card border-b border-slate-200 dark:border-slate-800 z-10">
         <h1 className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-purple-600">
           Room {roomId}
         </h1>
-        <button 
-          onClick={leaveRoom}
-          className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-        >
-          <LogOut size={18} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 text-slate-500 hover:text-primary-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button 
+            onClick={() => setShowLeaveModal(true)}
+            className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Sidebar Dashboard */}
@@ -199,13 +196,22 @@ const ChatRoom = () => {
           <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-purple-600">
             TempChat
           </h1>
-          <button 
-            onClick={leaveRoom}
-            title="Leave Room"
-            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-          >
-            <LogOut size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleTheme}
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="p-2 text-slate-400 hover:text-primary-500 dark:hover:text-primary-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button 
+              onClick={() => setShowLeaveModal(true)}
+              title="Leave Room"
+              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
         <Dashboard 
           roomInfo={roomInfo || { roomId, creator: isCreator ? username : 'Unknown', expiryTime: Date.now() + 3600000 }} 
@@ -216,15 +222,6 @@ const ChatRoom = () => {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-[#0b1120] relative">
-
-        {/* Host Disconnect Warning Banner */}
-        {hostWarning && (
-          <div className="flex items-center gap-2 px-4 py-2.5 bg-red-600/90 text-white text-sm font-medium text-center justify-center z-20 animate-fade-in backdrop-blur-sm border-b border-red-500">
-            <span>⚠️</span>
-            <span>{hostWarning}</span>
-          </div>
-        )}
-
         <div className="flex-1 overflow-hidden">
           <ChatBox 
             messages={messages} 
