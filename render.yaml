@@ -11,7 +11,7 @@ services:
         value: production
       - key: FRONTEND_URL
         fromService:
-          type: static
+          type: web
           name: tempchat-frontend
           property: url
     disk:
@@ -20,12 +20,12 @@ services:
       sizeGB: 1
 
   # The Frontend Static Site
-  - type: static
+  - type: web
     name: tempchat-frontend
     env: static
     rootDir: frontend
     buildCommand: npm install && npm run build
-    publishPath: dist
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
         fromService:
