@@ -11,10 +11,6 @@ services:
         value: production
       - key: FRONTEND_URL
         sync: false
-    disk:
-      name: tempchat-db
-      mountPath: /opt/render/project/src/backend/data
-      sizeGB: 1
 
   # The Frontend Static Site
   - type: web
