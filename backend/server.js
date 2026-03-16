@@ -1,57 +1,86 @@
-const express = require('express');
-const http = require('http');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const { Server } = require('socket.io');
-
-// Load environment variables
-dotenv.config();
-
-const { connectDB } = require('./config/db');
-
-// Connect to Database
-connectDB();
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 const server = http.createServer(app);
+const io = new Server(server);
 
-// Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  methods: ['GET', 'POST']
-}));
+const PORT = process.env.PORT || 3000;
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Routes will be mounted here
-app.use('/api/rooms', require('./routes/roomRoutes'));
+// serve frontend
+app.use(express.static(path.join(__dirname, "public")));
 
-// --- NEW HOME ROUTE ---
-app.get('/', (req, res) => {
-  res.send(`
-    <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-      <h1 style="color: #4f46e5;">TempChat API is Live! 🚀</h1>
-      <p>Your backend server is running successfully on Render.</p>
-    </div>
-  `);
+let rooms = {};
+
+// create room API
+app.post("/api/create-room", (req, res) => {
+  const roomId = uuidv4().slice(0, 6);
+  rooms[roomId] = { users: [] };
+
+  res.json({
+    success: true,
+    roomId: roomId
+  });
 });
 
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'TempChat backend is running' });
-});
+// check room API
+app.get("/api/room/:id", (req, res) => {
+  const roomId = req.params.id;
 
-// Setup Socket.io
-const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || '*',
-    methods: ['GET', 'POST']
+  if (rooms[roomId]) {
+    res.json({ exists: true });
+  } else {
+    res.json({ exists: false });
   }
 });
 
-// Import socket logic
-const chatSocket = require('./socket/chatSocket');
-chatSocket(io);
+// socket connection
+io.on("connection", (socket) => {
 
-const PORT = process.env.PORT || 5000;
+  socket.on("join-room", ({ roomId, username }) => {
+
+    if (!rooms[roomId]) {
+      rooms[roomId] = { users: [] };
+    }
+
+    socket.join(roomId);
+
+    rooms[roomId].users.push({
+      id: socket.id,
+      username: username
+    });
+
+    io.to(roomId).emit("user-joined", username);
+
+  });
+
+  socket.on("send-message", ({ roomId, message, username }) => {
+    io.to(roomId).emit("receive-message", {
+      username,
+      message,
+      time: new Date().toLocaleTimeString()
+    });
+  });
+
+  socket.on("disconnect", () => {
+    for (const roomId in rooms) {
+      rooms[roomId].users = rooms[roomId].users.filter(
+        u => u.id !== socket.id
+      );
+
+      if (rooms[roomId].users.length === 0) {
+        delete rooms[roomId];
+      }
+    }
+  });
+
+});
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
