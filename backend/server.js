@@ -24,6 +24,17 @@ app.use(express.json());
 
 // Routes will be mounted here
 app.use('/api/rooms', require('./routes/roomRoutes'));
+
+// --- NEW HOME ROUTE ---
+app.get('/', (req, res) => {
+  res.send(`
+    <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+      <h1 style="color: #4f46e5;">TempChat API is Live! 🚀</h1>
+      <p>Your backend server is running successfully on Render.</p>
+    </div>
+  `);
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'TempChat backend is running' });
 });
