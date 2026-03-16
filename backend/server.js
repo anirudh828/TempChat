@@ -11,77 +11,59 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// serve frontend
 app.use(express.static(path.join(__dirname, "public")));
 
 let rooms = {};
 
-// create room API
-app.post("/api/create-room", (req, res) => {
-  const roomId = uuidv4().slice(0, 6);
-  rooms[roomId] = { users: [] };
+// CREATE ROOM
+app.post("/create-room", (req, res) => {
 
-  res.json({
-    success: true,
-    roomId: roomId
-  });
+    const roomId = uuidv4().slice(0,6);
+
+    rooms[roomId] = [];
+
+    res.json({
+        success: true,
+        roomId: roomId
+    });
+
 });
 
-// check room API
-app.get("/api/room/:id", (req, res) => {
-  const roomId = req.params.id;
+// CHECK ROOM
+app.get("/room/:id", (req,res)=>{
 
-  if (rooms[roomId]) {
-    res.json({ exists: true });
-  } else {
-    res.json({ exists: false });
-  }
+    const roomId = req.params.id;
+
+    if(rooms[roomId]){
+        res.json({exists:true})
+    }else{
+        res.json({exists:false})
+    }
+
 });
 
-// socket connection
+
 io.on("connection", (socket) => {
 
-  socket.on("join-room", ({ roomId, username }) => {
+    socket.on("join-room", ({roomId, username}) => {
 
-    if (!rooms[roomId]) {
-      rooms[roomId] = { users: [] };
-    }
+        socket.join(roomId);
 
-    socket.join(roomId);
+        socket.to(roomId).emit("user-joined", username);
 
-    rooms[roomId].users.push({
-      id: socket.id,
-      username: username
     });
 
-    io.to(roomId).emit("user-joined", username);
+    socket.on("send-message", ({roomId, message, username}) => {
 
-  });
+        io.to(roomId).emit("receive-message", {
+            username,
+            message
+        });
 
-  socket.on("send-message", ({ roomId, message, username }) => {
-    io.to(roomId).emit("receive-message", {
-      username,
-      message,
-      time: new Date().toLocaleTimeString()
     });
-  });
-
-  socket.on("disconnect", () => {
-    for (const roomId in rooms) {
-      rooms[roomId].users = rooms[roomId].users.filter(
-        u => u.id !== socket.id
-      );
-
-      if (rooms[roomId].users.length === 0) {
-        delete rooms[roomId];
-      }
-    }
-  });
 
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(PORT, ()=>{
+    console.log("Server running on port " + PORT);
 });
