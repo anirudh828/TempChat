@@ -4,14 +4,14 @@ services:
     name: tempchat-backend
     env: node
     rootDir: backend
-    buildCommand: npm install && npm rebuild sqlite3
+    buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: FRONTEND_URL
         sync: false
-
+        
   # The Frontend Static Site
   - type: web
     name: tempchat-frontend
