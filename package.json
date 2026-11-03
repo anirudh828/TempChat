@@ -1,0 +1,15 @@
+{
+  "name": "tempchat-app",
+  "version": "1.0.0",
+  "description": "TempChat - Secure Temporary Chat Rooms with Auto-Expiry",
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build && npm --prefix backend install",
+    "start": "node backend/server.js",
+    "dev:backend": "npm --prefix backend start",
+    "dev:frontend": "npm --prefix frontend run dev"
+  },
+  "keywords": ["chat", "temporary", "realtime", "socketio", "react", "sqlite"],
+  "author": "Anirudh Reddy",
+  "license": "MIT"
+}

@@ -1,24 +1,10 @@
 services:
-  # The Backend Node.js Service
   - type: web
-    name: tempchat-backend
+    name: tempchat
     env: node
-    rootDir: backend
-    buildCommand: npm install
+    plan: free
+    buildCommand: npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: FRONTEND_URL
-        sync: false
-        
-  # The Frontend Static Site
-  - type: web
-    name: tempchat-frontend
-    env: static
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    envVars:
-      - key: VITE_API_URL
-        sync: false

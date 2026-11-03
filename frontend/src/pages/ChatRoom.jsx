@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Dashboard from '../components/Dashboard';
 import ChatBox from '../components/ChatBox';
-import { LogOut, X, Sun, Moon } from 'lucide-react';
+import { LogOut, X, Sun, Moon, Info } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
 const ChatRoom = () => {
@@ -17,6 +17,7 @@ const ChatRoom = () => {
   const [userCount, setUserCount] = useState(location.state?.initialUserCount || 1);
   const [activeTypers, setActiveTypers] = useState(new Set());
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const { isDark, toggleTheme } = useTheme();
 
   const username = location.state?.username;
@@ -32,16 +33,22 @@ const ChatRoom = () => {
       setMessages(location.state.initialMessages);
     }
 
-    if (location.state?.isCreator) {
-      setRoomInfo({
-        roomId,
-        creator: username,
-        expiryTime: new Date(Date.now() + 60 * 60 * 1000)
-      });
-    }
-
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : 'http://localhost:5000/api');
     const socketUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
+
+    if (location.state?.roomInfo) {
+      setRoomInfo(location.state.roomInfo);
+    } else {
+      // Fetch public room metadata from backend
+      fetch(`${apiUrl}/rooms/${roomId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.room) {
+            setRoomInfo(data.room);
+          }
+        })
+        .catch(err => console.error('Failed to load room details:', err));
+    }
     
     const newSocket = io(socketUrl);
     setSocket(newSocket);
@@ -176,6 +183,13 @@ const ChatRoom = () => {
         </h1>
         <div className="flex items-center gap-1">
           <button
+            onClick={() => setShowInfoModal(true)}
+            title="App Info"
+            className="p-1.5 text-slate-500 hover:text-primary-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            <Info size={16} />
+          </button>
+          <button
             onClick={toggleTheme}
             className="p-1.5 text-slate-500 hover:text-primary-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
@@ -197,6 +211,13 @@ const ChatRoom = () => {
             TempChat
           </h1>
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowInfoModal(true)}
+              title="App Info"
+              className="p-2 text-slate-400 hover:text-primary-500 dark:hover:text-primary-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <Info size={18} />
+            </button>
             <button
               onClick={toggleTheme}
               title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
@@ -233,6 +254,50 @@ const ChatRoom = () => {
           />
         </div>
       </div>
+
+      {/* Info Popup Modal */}
+      {showInfoModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in"
+          onClick={() => setShowInfoModal(false)}
+        >
+          <div 
+            className="w-full max-w-xs glass-panel rounded-2xl p-6 shadow-2xl relative animate-slide-up bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-700/80"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Cross Button */}
+            <button
+              onClick={() => setShowInfoModal(false)}
+              className="absolute top-3.5 right-3.5 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Close"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Info Content */}
+            <div className="flex flex-col items-center text-center pt-2">
+              <div className="w-12 h-12 rounded-2xl bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center mb-3 shadow-inner">
+                <Info size={24} />
+              </div>
+              <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-purple-600 dark:from-primary-400 dark:to-purple-400 mb-1">
+                TempChat
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                Secure Temporary Chat Rooms
+              </p>
+
+              <div className="w-full py-3 px-4 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-1">
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  By: <span className="text-primary-600 dark:text-primary-400 font-bold">AniRed</span>
+                </p>
+                <p className="text-xs font-mono font-medium text-slate-500 dark:text-slate-400">
+                  v1.2.7
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

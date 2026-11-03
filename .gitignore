@@ -1,10 +1,37 @@
+# Dependencies
 node_modules/
-backend/node_modules/
-frontend/node_modules/
-tempchat.db
-data/
-*.log
+**/node_modules/
+
+# Environment variables
 .env
+**/.env
+.env.local
+.env.*.local
+
+# Build output
 dist/
+**/dist/
 build/
+**/build/
+
+# Database & Data
+*.db
+*.db-journal
+data/
+**/data/
+
+# Logs
+*.log
+**/logs/
+
+# Test data / Stray files
+*.csv
+out.txt
+log_main.txt
+
+# OS & Editor
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
+TempChatLocal/

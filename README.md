@@ -1,17 +1,19 @@
-# TempChat - Secure Temporary Chat Rooms
+# TempChat - Secure Temporary Chat Rooms ⚡
 
-TempChat is a modern, real-time web application where users can create password-protected chat rooms that automatically expire after a set time. Built with React, TailwindCSS, Express, Node.js, Socket.io, and a local SQLite database file.
+TempChat is a modern, real-time web application where users can create password-protected chat rooms that automatically expire after a set time. Built with React 19, TailwindCSS, Express 5, Node.js, Socket.io, and a self-contained SQLite database.
 
 ## Features
 
-- **Real-time Messaging**: Instant, low-latency communication via Socket.io.
+- **Real-time Messaging**: Instant, low-latency communication via WebSockets (Socket.io).
 - **Temporary Rooms**: Rooms expire automatically after a specified time frame (e.g., 5 mins to 24 hours).
+- **Real-time Live Countdown**: Dynamic timer showing remaining time before room destruction.
 - **Password Protection**: Secure your rooms with passwords.
 - **Message Reactions**: React to specific messages with emojis (👍 ❤️ 😂 🔥 🎉).
 - **Typing Indicators**: See when others are typing in real-time.
 - **Activity Dashboard**: View room stats, creator name, active user count, and time remaining.
 - **Dark / Light Mode**: Seamlessly toggle between dark and light themes (preference saved).
-- **Responsive Design**: Looks beautiful on mobile, tablet, and desktop securely built with TailwindCSS.
+- **Zero Config Database**: SQLite runs locally and self-cleans expired rooms every 60 seconds.
+- **Single-Service Deployable**: Backend automatically builds and serves the frontend in production.
 
 ---
 
@@ -20,98 +22,79 @@ TempChat is a modern, real-time web application where users can create password-
 ```
 tempchat/
 ├── backend/
-│   ├── config/          # DB connection
-│   ├── controllers/     # API logic
-│   ├── models/          # Mongoose schemas (Room, Message)
+│   ├── config/          # SQLite DB connection (data/tempchat.db)
+│   ├── controllers/     # API logic (createRoom, joinRoom, getRoomInfo)
+│   ├── models/          # Room model with auto-cleanup
 │   ├── routes/          # Express route definitions
-│   ├── socket/          # Socket.io event handlers
-│   ├── .env             # Environment variables
-│   └── server.js        # Main entry point
-└── frontend/
-    ├── src/
-    │   ├── components/  # Reusable UI parts (ChatBox, Message, etc.)
-    │   ├── pages/       # Route-level components (Home, ChatRoom)
-    │   ├── App.jsx      # React router & theme logic
-    │   └── index.css    # Tailwind directives & global styles
-    ├── .env             # Frontend env variables
-    ├── index.html       # Vite entry HTML
-    └── tailwind.config.js
+│   ├── socket/          # Socket.io real-time chat handlers
+│   ├── .env             # Backend environment variables
+│   └── server.js        # Main entry point & static frontend server
+├── frontend/
+│   ├── src/
+│   │   ├── components/  # ChatBox, CreateRoom, JoinRoom, Dashboard, Message
+│   │   ├── pages/       # Home, ChatRoom
+│   │   ├── App.jsx      # React router & theme layout
+│   │   └── index.css    # Tailwind directives & styles
+│   ├── index.html       # Vite entry HTML
+│   └── vite.config.js
+├── package.json         # Root monorepo scripts
+├── render.yaml          # 1-Click Render blueprint
+└── README.md
 ```
 
 ---
 
-## Prerequisites
+## Quick Start (Local Development)
 
-- **Node.js**: Verify installation (`node -v`)
-- **Database**: Uses SQLite built-in (no external setup required!)
+### 1. Install All Dependencies
+From the repository root:
+```bash
+npm run install:all
+```
 
----
+### 2. Build Frontend & Run Full-Stack App
+```bash
+npm run build
+npm start
+```
+Open your browser to `http://localhost:5000`.
 
-## Setup & Running Locally
-
-### 1. Backend Setup
-
-1. Open a terminal and navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Configure your `.env` file (already created during generation) in the `backend` folder:
-   ```env
-   PORT=5000
-   FRONTEND_URL=http://localhost:5173
-   # Database will automatically generate as tempchat.db
-   ```
-4. Start the server:
-   ```bash
-   node server.js
-   ```
-
-### 2. Frontend Setup
-
-1. Open a *new* terminal block and navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Configure your frontend `.env` (already created if you used Vite defaults or create one):
-   ```env
-   VITE_API_URL=http://localhost:5000/api
-   ```
-4. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-
-5. Open your browser to `http://localhost:5173`.
+### Or Run in Hot-Reload Development Mode:
+In terminal 1 (Backend):
+```bash
+npm run dev:backend
+```
+In terminal 2 (Frontend):
+```bash
+npm run dev:frontend
+```
+Open `http://localhost:5173`.
 
 ---
 
-## Deployment Guidelines
+## Free Online Deployment
 
-### Backend (Render or Railway)
-- Create a new Web Service pointing to the `/backend` folder.
-- Add your environment variables: `MONGO_URI`, `FRONTEND_URL` (the deployed Vercel URL), and `PORT`.
-- Start Command: `node server.js`
+### Option A: Render (Easiest - 1 Web Service for Everything)
+1. Push this repository to your GitHub account (`https://github.com/anirudh828/TempChat`).
+2. Go to [Render Dashboard](https://dashboard.render.com).
+3. Click **New +** -> **Web Service**.
+4. Select your **TempChat** repository.
+5. Set:
+   - **Environment**: `Node`
+   - **Build Command**: `npm run build`
+   - **Start Command**: `npm start`
+   - **Plan**: `Free`
+6. Click **Deploy Web Service**! Render will build the frontend, start the backend, and give you a live `https://tempchat-xxxx.onrender.com` URL with HTTPS and WebSockets working automatically!
 
-### Frontend (Vercel)
-- Create a new project in Vercel pointing to the `/frontend` folder.
-- Framework Preset should be detected as **Vite**.
-- Add the Environment Variable: `VITE_API_URL` pointing to your deployed backend URL.
-- Deploy!
+### Option B: Railway
+1. Go to [railway.app](https://railway.app).
+2. Click **New Project** -> **Deploy from GitHub repo** -> Select `TempChat`.
+3. Railway automatically detects `npm run build` and `npm start`.
+4. Generate a public domain under Settings -> Networking.
 
 ---
 
 ## Core Technologies
-- **React** (Vite)
-- **TailwindCSS** (Styling + Dark Mode)
-- **Lucide React** (Icons)
-- **Node.js & Express** 
-- **Socket.io** (WebSockets)
-- **MongoDB & Mongoose** (Database)
+- **Frontend**: React 19, Vite, TailwindCSS v4, Lucide Icons, Emoji Picker React
+- **Backend**: Node.js, Express 5, Socket.io
+- **Database**: SQLite3 (automatic file-based storage in `backend/data/tempchat.db` with auto-expiration cleanup)

@@ -1,18 +1,30 @@
+import { useState, useEffect } from 'react';
 import { Users, MessageSquare, Clock, Info } from 'lucide-react';
 
 const Dashboard = ({ roomInfo, userCount, messageCount }) => {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   if (!roomInfo) return null;
 
   // Calculate remaining time
   const expiryTime = new Date(roomInfo.expiryTime).getTime();
-  const now = new Date().getTime();
-  const diffMinutes = Math.max(0, Math.floor((expiryTime - now) / (1000 * 60)));
+  const diffSeconds = Math.max(0, Math.floor((expiryTime - now) / 1000));
+  const diffMinutes = Math.floor(diffSeconds / 60);
   const diffHours = Math.floor(diffMinutes / 60);
   const remainingMins = diffMinutes % 60;
+  const remainingSecs = diffSeconds % 60;
 
-  let timeDisplay = `${diffMinutes} mins`;
+  let timeDisplay = `${remainingMins}m ${remainingSecs}s`;
   if (diffHours > 0) {
-    timeDisplay = `${diffHours}h ${remainingMins}m`;
+    timeDisplay = `${diffHours}h ${remainingMins}m ${remainingSecs}s`;
+  }
+  if (diffSeconds === 0) {
+    timeDisplay = 'Expired';
   }
 
   return (

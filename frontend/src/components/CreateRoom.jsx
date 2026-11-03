@@ -23,7 +23,7 @@ const CreateRoom = () => {
     setLoading(true);
     
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : 'http://localhost:5000/api');
       
       const payload = {
         username: formData.username,
@@ -56,7 +56,8 @@ const CreateRoom = () => {
           username: formData.username,
           roomId: data.room.roomId,
           isCreator: true,
-          initialUserCount: 1
+          initialUserCount: 1,
+          roomInfo: data.room
         } 
       });
 

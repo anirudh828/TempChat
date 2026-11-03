@@ -111,7 +111,39 @@ const joinRoom = async (req, res) => {
   }
 };
 
+// @desc    Get room public info (creator, expiry, users count)
+// @route   GET /api/rooms/:roomId
+// @access  Public
+const getRoomInfo = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await Room.findOne({ roomId });
+
+    if (!room) {
+      return res.status(404).json({ success: false, message: 'Room not found' });
+    }
+
+    if (room.isExpired) {
+      return res.status(410).json({ success: false, message: 'This room has expired' });
+    }
+
+    res.status(200).json({
+      success: true,
+      room: {
+        roomId: room.roomId,
+        creator: room.creator,
+        expiryTime: room.expiryTime,
+        userCount: room.users ? room.users.length : 0
+      }
+    });
+  } catch (error) {
+    console.error('Get room info error:', error);
+    res.status(500).json({ success: false, message: 'Server error fetching room info' });
+  }
+};
+
 module.exports = {
   createRoom,
-  joinRoom
+  joinRoom,
+  getRoomInfo
 };

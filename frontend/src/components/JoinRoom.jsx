@@ -22,7 +22,7 @@ const JoinRoom = () => {
     setLoading(true);
     
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : 'http://localhost:5000/api');
       
       const res = await fetch(`${apiUrl}/rooms/join`, {
         method: 'POST',
@@ -45,7 +45,8 @@ const JoinRoom = () => {
           roomId: data.room.roomId,
           isCreator: false,
           initialMessages: data.room.messages,
-          initialUserCount: data.room.users ? data.room.users.length : 1
+          initialUserCount: data.room.users ? data.room.users.length : 1,
+          roomInfo: data.room
         } 
       });
 
